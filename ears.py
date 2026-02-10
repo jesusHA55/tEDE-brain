@@ -10,7 +10,7 @@ CHUNK = 1280  # ~80ms de audio
 
 # Cargar el modelo que generaste (o uno por defecto para probar)
 # Sustituye 'ede.onnx' por la ruta a tu archivo generado
-model = Model(wakeword_models=["ED-E/models/wakeword/ede.onnx"], inference_framework="onnx")
+model = Model(wakeword_models=["/Wakewords/teddy.onnx"], inference_framework="onnx")
 
 audio = pyaudio.PyAudio()
 mic_stream = audio.open(format=pyaudio.paInt16, channels=CHANNELS, rate=RATE, 
