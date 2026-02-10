@@ -17,6 +17,6 @@ class tEDE_Brain:
             if "//" in content:
                 texto, emocion = content.split("//", 1)
                 return texto.strip(), emocion.strip().upper()
-            return content.strip(), "MEH"
+            return content.strip(), "IDLE"
         except Exception as e:
             return f"Error de conexion: {e}", "ERROR"
