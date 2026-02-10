@@ -1,6 +1,7 @@
 import pyaudio
 import numpy as np
 from openwakeword.model import Model
+from faster_whisper import WhisperModel
 
 # Configuracion del audio
 CHANNELS = 1
@@ -28,9 +29,12 @@ try:
         
         # El umbral estondar es 0.5
         for mdl, score in prediction.items():
-            if score > 0.6:  # Ajusta este valor según falsos positivos
+            if score > 0.6:  # Ajusta este valor segÃºn falsos positivos
                 print(f"Word detected! Score: {score}")
-                # Aqui disparariamos la logica de respuesta de tED-E
+                # Imprimimos lo escuchado anteriormente, que deberia ser la wakeword
+                segments, info = model.transcribe(audio_np, beam_size=5)
+                for segment in segments:
+                    print(f"[{segment.start:.2f}s -> {segment.end:.2f}s] {segment.text}")
 except KeyboardInterrupt:
     mic_stream.stop_stream()
     mic_stream.close()
