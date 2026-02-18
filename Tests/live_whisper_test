@@ -1,0 +1,70 @@
+import pyaudio
+import numpy as np
+from faster_whisper import WhisperModel
+import collections
+
+# Configuración de Audio
+CHUNK = 1024
+FORMAT = pyaudio.paInt16
+CHANNELS = 1
+RATE = 16000  # Whisper prefiere 16kHz
+SILENCE_THRESHOLD = 500  # Ajusta según el ruido de los motores de la Netbot
+SILENCE_CHUNKS = 20      # Cuántos bloques de silencio antes de procesar
+
+def listen_live():
+    # Inicializar modelo (Tiny es ideal para directo)
+    model = WhisperModel("tiny", device="cpu", compute_type="int8")
+    
+    p = pyaudio.PyAudio()
+    stream = p.open(format=FORMAT, channels=CHANNELS, rate=RATE,
+                    input=True, frames_per_buffer=CHUNK)
+
+    print("--- tEDE está escuchando... (Ctrl+C para salir) ---")
+    
+    frames = []
+    is_speaking = False
+    silent_chunks = 0
+
+    try:
+        while True:
+            data = stream.read(CHUNK, exception_on_overflow=False)
+            audio_data = np.frombuffer(data, dtype=np.int16)
+            amplitude = np.abs(audio_data).mean()
+
+            if amplitude > SILENCE_THRESHOLD:
+                if not is_speaking:
+                    print("🎤 Detectado sonido...")
+                is_speaking = True
+                frames.append(audio_data)
+                silent_chunks = 0
+            elif is_speaking:
+                frames.append(audio_data)
+                silent_chunks += 1
+                
+                # Si detectamos una pausa tras hablar, transcribimos
+                if silent_chunks > SILENCE_CHUNKS:
+                    print("⌛ Procesando frase...")
+                    # Convertir a float32 para Whisper
+                    full_audio = np.concatenate(frames).astype(np.float32) / 32768.0
+                    
+                    segments, _ = model.transcribe(full_audio, beam_size=5)
+                    
+                    for segment in segments:
+                        text = segment.text.strip()
+                        if text:
+                            print(f"🤖 ED-E entendió: {text}")
+                    
+                    # Resetear para la siguiente frase
+                    frames = []
+                    is_speaking = False
+                    silent_chunks = 0
+
+    except KeyboardInterrupt:
+        print("\n--- Apagando sistemas de escucha ---")
+    finally:
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+
+if __name__ == "__main__":
+    listen_live()
